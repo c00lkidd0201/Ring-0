@@ -1,35 +1,40 @@
 // main.c
-#pragma pack(push, 1) // Выравнивание 1 байт для ядра
-#define _KERNEL_MODE
+#pragma pack(push, 1)
 
-#include "SharedDefs.h"
-
-// --- Ручные определения типов Windows (NO-WDK) ---
+// --- Базовые типы для NO-WDK ---
 typedef void* PVOID;
 typedef unsigned long ULONG;
 typedef unsigned long long ULONG64;
 typedef long NTSTATUS;
 typedef unsigned short USHORT;
 typedef unsigned char UCHAR;
-typedef char CHAR;
 typedef int BOOLEAN;
+
+// --- NULL и SIZE_T ---
+#ifndef NULL
+#define NULL ((void*)0)
+#endif
+
+typedef ULONG64 SIZE_T;
+
+// --- wchar_t (если не определен) ---
+#ifndef _WCHAR_T_DEFINED
+typedef wchar_t WCHAR;
+#define _WCHAR_T_DEFINED
+#endif
 
 // --- NTSTATUS коды ---
 #define STATUS_SUCCESS              ((NTSTATUS)0x00000000)
 #define STATUS_UNSUCCESSFUL        ((NTSTATUS)0xC0000001)
 #define STATUS_INVALID_PARAMETER   ((NTSTATUS)0xC000000D)
-#define STATUS_INFO_LENGTH_MISMATCH ((NTSTATUS)0xC0000004)
 
-// --- Типы пулов памяти ---
-typedef enum _POOL_TYPE {
-    NonPagedPoolNx = 0x200
-} POOL_TYPE;
+#define NT_SUCCESS(Status) (((NTSTATUS)(Status)) >= 0)
 
 // --- Структуры ядра ---
 typedef struct _UNICODE_STRING {
     USHORT Length;
     USHORT MaximumLength;
-    wchar_t* Buffer;
+    WCHAR* Buffer;
 } UNICODE_STRING, *PUNICODE_STRING;
 
 typedef struct _DRIVER_OBJECT {
@@ -47,7 +52,7 @@ typedef struct _DRIVER_OBJECT {
     PVOID DriverInit;
     PVOID DriverStartIo;
     PVOID DriverUnload;
-    PVOID MajorFunction[28]; // IRP_MJ_* handlers
+    PVOID MajorFunction[28];
 } DRIVER_OBJECT, *PDRIVER_OBJECT;
 
 typedef struct _DEVICE_OBJECT {
@@ -100,7 +105,7 @@ typedef struct _IO_STACK_LOCATION {
     PVOID Context;
 } IO_STACK_LOCATION, *PIO_STACK_LOCATION;
 
-// --- Прототипы функций ядра (ручные __declspec(dllimport)) ---
+// --- Прототипы функций ядра ---
 __declspec(dllimport) NTSTATUS IoCreateDevice(
     PDRIVER_OBJECT DriverObject,
     ULONG DeviceExtensionSize,
@@ -139,16 +144,41 @@ __declspec(dllimport) NTSTATUS MmCopyVirtualMemory(
     PSIZE_T ReturnSize
 );
 
+// --- IOCTL команды ---
+#define FILE_ANY_ACCESS      0x00000000
+#define METHOD_BUFFERED      0x00000000
+#define FILE_DEVICE_UNKNOWN  0x00000022
+#define CTL_CODE(DeviceType, Function, Method, Access) \
+    (((DeviceType) << 16) | ((Access) << 14) | ((Function) << 2) | (Method))
+
+#define IOCTL_READ_MEMORY  CTL_CODE(FILE_DEVICE_UNKNOWN, 0x0001, METHOD_BUFFERED, FILE_ANY_ACCESS)
+#define IOCTL_WRITE_MEMORY CTL_CODE(FILE_DEVICE_UNKNOWN, 0x0002, METHOD_BUFFERED, FILE_ANY_ACCESS)
+
+// --- Структуры для обмена данными ---
+typedef struct _MEMORY_READ_REQUEST {
+    ULONG ProcessId;
+    ULONG64 Address;
+    ULONG Size;
+    UCHAR Buffer[1];
+} MEMORY_READ_REQUEST, *PMEMORY_READ_REQUEST;
+
+typedef struct _MEMORY_WRITE_REQUEST {
+    ULONG ProcessId;
+    ULONG64 Address;
+    ULONG Size;
+    UCHAR Data[1];
+} MEMORY_WRITE_REQUEST, *PMEMORY_WRITE_REQUEST;
+
 // --- Глобальные переменные ---
 PDEVICE_OBJECT g_DeviceObject = NULL;
 UNICODE_STRING g_DeviceName;
 UNICODE_STRING g_SymbolicLinkName;
 
 // --- Вспомогательные функции ---
-NTSTATUS InitializeUnicodeString(PUNICODE_STRING String, const wchar_t* Buffer) {
-    String->Buffer = (wchar_t*)Buffer;
-    String->Length = (USHORT)(wcslen(Buffer) * sizeof(wchar_t));
-    String->MaximumLength = String->Length + sizeof(wchar_t);
+NTSTATUS InitializeUnicodeString(PUNICODE_STRING String, const WCHAR* Buffer) {
+    String->Buffer = (WCHAR*)Buffer;
+    String->Length = (USHORT)(wcslen(Buffer) * sizeof(WCHAR));
+    String->MaximumLength = String->Length + sizeof(WCHAR);
     return STATUS_SUCCESS;
 }
 
@@ -166,8 +196,6 @@ NTSTATUS DispatchDeviceControl(PDEVICE_OBJECT DeviceObject, PIRP Irp) {
     }
 
     PVOID InputBuffer = Irp->AssociatedIrp.SystemBuffer;
-    ULONG InputSize = IoStack->Parameters.DeviceIoControl.InputBufferLength;
-    ULONG OutputSize = IoStack->Parameters.DeviceIoControl.OutputBufferLength;
     ULONG IoControlCode = IoStack->Parameters.DeviceIoControl.IoControlCode;
 
     if (IoControlCode == IOCTL_READ_MEMORY) {
@@ -177,7 +205,7 @@ NTSTATUS DispatchDeviceControl(PDEVICE_OBJECT DeviceObject, PIRP Irp) {
             Status = MmCopyVirtualMemory(
                 (PVOID)(ULONG64)Request->ProcessId,
                 (PVOID)Request->Address,
-                (PVOID)(-1), // Текущий процесс
+                (PVOID)(-1),
                 Request->Buffer,
                 Request->Size,
                 0,
@@ -193,7 +221,7 @@ NTSTATUS DispatchDeviceControl(PDEVICE_OBJECT DeviceObject, PIRP Irp) {
         if (Request && Request->Size > 0) {
             SIZE_T ReturnSize = 0;
             Status = MmCopyVirtualMemory(
-                (PVOID)(-1), // Текущий процесс
+                (PVOID)(-1),
                 Request->Data,
                 (PVOID)(ULONG64)Request->ProcessId,
                 (PVOID)Request->Address,
@@ -215,7 +243,7 @@ NTSTATUS DispatchDeviceControl(PDEVICE_OBJECT DeviceObject, PIRP Irp) {
 
 // --- Обработчик создания устройства ---
 NTSTATUS DispatchCreate(PDEVICE_OBJECT DeviceObject, PIRP Irp) {
-    (void)DeviceObject; // Убираем варнинг о неиспользуемой переменной
+    (void)DeviceObject;
     Irp->IoStatus.Status = STATUS_SUCCESS;
     Irp->IoStatus.Information = 0;
     IoCompleteRequest(Irp, 0);
@@ -224,7 +252,7 @@ NTSTATUS DispatchCreate(PDEVICE_OBJECT DeviceObject, PIRP Irp) {
 
 // --- Обработчик закрытия устройства ---
 NTSTATUS DispatchClose(PDEVICE_OBJECT DeviceObject, PIRP Irp) {
-    (void)DeviceObject; // Убираем варнинг о неиспользуемой переменной
+    (void)DeviceObject;
     Irp->IoStatus.Status = STATUS_SUCCESS;
     Irp->IoStatus.Information = 0;
     IoCompleteRequest(Irp, 0);
@@ -233,7 +261,7 @@ NTSTATUS DispatchClose(PDEVICE_OBJECT DeviceObject, PIRP Irp) {
 
 // --- Функция выгрузки драйвера ---
 VOID DriverUnload(PDRIVER_OBJECT DriverObject) {
-    (void)DriverObject; // Убираем варнинг о неиспользуемой переменной
+    (void)DriverObject;
     if (g_DeviceObject) {
         IoDeleteSymbolicLink(&g_SymbolicLinkName);
         IoDeleteDevice(g_DeviceObject);
@@ -243,17 +271,15 @@ VOID DriverUnload(PDRIVER_OBJECT DriverObject) {
 
 // --- Точка входа драйвера ---
 NTSTATUS DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING RegistryPath) {
-    (void)RegistryPath; // Убираем варнинг о неиспользуемой переменной
+    (void)RegistryPath;
     NTSTATUS Status = STATUS_UNSUCCESSFUL;
 
-    // Инициализация имен устройства
-    static wchar_t DeviceNameBuffer[] = L"\\Device\\MemoryDriver";
-    static wchar_t SymbolicLinkBuffer[] = L"\\DosDevices\\MemoryDriver";
+    static WCHAR DeviceNameBuffer[] = L"\\Device\\MemoryDriver";
+    static WCHAR SymbolicLinkBuffer[] = L"\\DosDevices\\MemoryDriver";
 
     InitializeUnicodeString(&g_DeviceName, DeviceNameBuffer);
     InitializeUnicodeString(&g_SymbolicLinkName, SymbolicLinkBuffer);
 
-    // Создание устройства
     Status = IoCreateDevice(
         DriverObject,
         0,
@@ -268,7 +294,6 @@ NTSTATUS DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING RegistryPath) 
         return Status;
     }
 
-    // Создание символической ссылки
     Status = IoCreateSymbolicLink(&g_SymbolicLinkName, &g_DeviceName);
     if (!NT_SUCCESS(Status)) {
         IoDeleteDevice(g_DeviceObject);
@@ -276,14 +301,12 @@ NTSTATUS DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING RegistryPath) 
         return Status;
     }
 
-    // Настройка обработчиков IRP
-    DriverObject->MajorFunction[0x00] = (PVOID)DispatchCreate;  // IRP_MJ_CREATE
-    DriverObject->MajorFunction[0x04] = (PVOID)DispatchClose;  // IRP_MJ_CLOSE
-    DriverObject->MajorFunction[0x0E] = (PVOID)DispatchDeviceControl; // IRP_MJ_DEVICE_CONTROL
-
+    DriverObject->MajorFunction[0x00] = (PVOID)DispatchCreate;
+    DriverObject->MajorFunction[0x04] = (PVOID)DispatchClose;
+    DriverObject->MajorFunction[0x0E] = (PVOID)DispatchDeviceControl;
     DriverObject->DriverUnload = DriverUnload;
 
     return STATUS_SUCCESS;
 }
 
-#pragma pack(pop) // Восстановление выравнивания
+#pragma pack(pop)
