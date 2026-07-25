@@ -10,18 +10,17 @@ typedef unsigned short USHORT;
 typedef unsigned char UCHAR;
 typedef int BOOLEAN;
 
-// --- NULL и SIZE_T ---
+// --- NULL ---
 #ifndef NULL
 #define NULL ((void*)0)
 #endif
 
+// --- SIZE_T и PSIZE_T ---
 typedef ULONG64 SIZE_T;
+typedef SIZE_T* PSIZE_T;
 
-// --- wchar_t (если не определен) ---
-#ifndef _WCHAR_T_DEFINED
+// --- wchar_t (встроенный тип в C) ---
 typedef wchar_t WCHAR;
-#define _WCHAR_T_DEFINED
-#endif
 
 // --- NTSTATUS коды ---
 #define STATUS_SUCCESS              ((NTSTATUS)0x00000000)
@@ -47,7 +46,7 @@ typedef struct _DRIVER_OBJECT {
     PVOID DriverSection;
     PVOID DriverExtension;
     UNICODE_STRING DriverName;
-    PVOID* HardwareDatabase;
+    PVOID HardwareDatabase;
     PVOID FastIoDispatch;
     PVOID DriverInit;
     PVOID DriverStartIo;
@@ -148,6 +147,8 @@ __declspec(dllimport) NTSTATUS MmCopyVirtualMemory(
 #define FILE_ANY_ACCESS      0x00000000
 #define METHOD_BUFFERED      0x00000000
 #define FILE_DEVICE_UNKNOWN  0x00000022
+#define FILE_DEVICE_SECURE_OPEN 0x00000001
+
 #define CTL_CODE(DeviceType, Function, Method, Access) \
     (((DeviceType) << 16) | ((Access) << 14) | ((Function) << 2) | (Method))
 
