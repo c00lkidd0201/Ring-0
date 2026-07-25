@@ -4,9 +4,14 @@
 // Compile as: Visual C++ DLL project with /WX (Treat Warnings As Errors)
 // ============================================================================
 
+// Define this before including Driver.h to prevent macro redefinitions
+#define _NTSTATUS_DEFINED_
+
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <winioctl.h>
+
+// Include our driver header
 #include "Driver.h"
 
 // ============================================================================
@@ -63,6 +68,7 @@ BOOL OpenDriverConnection()
     if (g_DriverHandle == INVALID_HANDLE_VALUE) {
         DWORD error = GetLastError();
         LeaveCriticalSection(&g_DriverLock);
+        SetLastError(error);
         return FALSE;
     }
     
@@ -97,7 +103,6 @@ MEMORYDRIVER_API BOOL ReadProcessMemoryEx(
 )
 {
     if (!OpenDriverConnection()) {
-        SetLastError(ERROR_DEVICE_NOT_AVAILABLE);
         return FALSE;
     }
     
@@ -166,7 +171,6 @@ MEMORYDRIVER_API BOOL WriteProcessMemoryEx(
 )
 {
     if (!OpenDriverConnection()) {
-        SetLastError(ERROR_DEVICE_NOT_AVAILABLE);
         return FALSE;
     }
     
@@ -233,7 +237,6 @@ MEMORYDRIVER_API BOOL GetProcessInfoEx(
 )
 {
     if (!OpenDriverConnection()) {
-        SetLastError(ERROR_DEVICE_NOT_AVAILABLE);
         return FALSE;
     }
     
@@ -371,8 +374,6 @@ extern "C" MEMORYDRIVER_API BOOL TestDriverCommunication()
     );
     
     // We expect this to fail, but the important thing is that the communication works
-    DWORD error = GetLastError();
-    
     // If we get here without crashing, communication is working
     return TRUE;
 }
