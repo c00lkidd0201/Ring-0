@@ -1,7 +1,7 @@
 // ============================================================================
 // NO-WDK USER-MODE DLL
 // Complete DLL implementation for communicating with the custom kernel driver
-// Compile as: Visual C++ DLL project with /WX (Treat Warnings As Errors)
+// Compile as: Visual C++ DLL project
 // ============================================================================
 
 #define WIN32_LEAN_AND_MEAN

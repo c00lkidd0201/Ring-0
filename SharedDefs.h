@@ -4,102 +4,36 @@
 // SHARED DEFINITIONS - Common for both kernel and user mode
 // ============================================================================
 
-// -----------------------------------------------------------------------------
-// Basic Types - Define only if not already defined
-// -----------------------------------------------------------------------------
-
 #ifndef _SHARED_DEFS_H_
 #define _SHARED_DEFS_H_
 
-// Prevent multiple inclusions
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-// -----------------------------------------------------------------------------
+// ============================================================================
 // Platform Detection
-// -----------------------------------------------------------------------------
+// ============================================================================
 
 #ifdef _KERNEL_MODE
-    // Kernel mode
+    // Kernel mode - include kernel definitions
+    #include "KernelDefs.h"
 #else
-    // User mode
+    // User mode - include Windows headers
     #ifndef WIN32_LEAN_AND_MEAN
         #define WIN32_LEAN_AND_MEAN
     #endif
     #include <windows.h>
     #include <winioctl.h>
+    
+    // Define types that might be missing
+    typedef long                NTSTATUS;
+    typedef SIZE_T*            PSIZE_T;
 #endif
 
-// -----------------------------------------------------------------------------
-// Common Types
-// -----------------------------------------------------------------------------
-
-// If not in kernel mode and not defined, define basic types
-#ifndef _WINDOWS_
-#ifndef _INC_WINDOWS
-
-// Basic integer types
-typedef signed char         INT8;
-typedef unsigned char       UINT8;
-typedef signed short        INT16;
-typedef unsigned short      UINT16;
-typedef signed int          INT32;
-typedef unsigned int        UINT32;
-typedef signed long long    INT64;
-typedef unsigned long long  UINT64;
-
-// Windows-compatible types
-typedef UINT8               BYTE;
-typedef UINT16              WORD;
-typedef UINT32              DWORD;
-typedef INT32               LONG;
-typedef UINT32              ULONG;
-
-// Pointer types
-typedef void*               PVOID;
-typedef const void*         PCVOID;
-
-// Handle types
-typedef PVOID               HANDLE;
-
-// Boolean
-typedef UINT8               BOOLEAN;
-#ifndef TRUE
-#define TRUE                    1
-#endif
-#ifndef FALSE
-#define FALSE                   0
-#endif
-#ifndef NULL
-#define NULL                    ((PVOID)0)
-#endif
-
-// Size types
-#ifdef _WIN64
-    typedef UINT64              SIZE_T;
-    typedef INT64               SSIZE_T;
-    typedef UINT64              ULONG_PTR;
-    typedef INT64               LONG_PTR;
-#else
-    typedef UINT32              SIZE_T;
-    typedef INT32               SSIZE_T;
-    typedef UINT32              ULONG_PTR;
-    typedef INT32               LONG_PTR;
-#endif
-
-// NTSTATUS
-#ifndef _NTSTATUS_DEFINED_
-#define _NTSTATUS_DEFINED_
-typedef LONG                NTSTATUS;
-#endif
-
-#endif // !_WINDOWS_ && !_INC_WINDOWS
-#endif // !_KERNEL_MODE
-
-// -----------------------------------------------------------------------------
+// ============================================================================
 // NT Status Codes
-// -----------------------------------------------------------------------------
+// ============================================================================
 
 #ifndef STATUS_SUCCESS
 #define STATUS_SUCCESS               ((NTSTATUS)0x00000000L)
@@ -132,16 +66,20 @@ typedef LONG                NTSTATUS;
 #define STATUS_NOT_IMPLEMENTED       ((NTSTATUS)0xC0000001L)
 #endif
 
-// -----------------------------------------------------------------------------
+// ============================================================================
 // Error Handling Macros
-// -----------------------------------------------------------------------------
+// ============================================================================
 
+#ifndef NT_SUCCESS
 #define NT_SUCCESS(Status)           (((NTSTATUS)(Status)) >= 0)
+#endif
+#ifndef NT_FAILURE
 #define NT_FAILURE(Status)           (((NTSTATUS)(Status)) < 0)
+#endif
 
-// -----------------------------------------------------------------------------
+// ============================================================================
 // IOCTL Definitions
-// -----------------------------------------------------------------------------
+// ============================================================================
 
 // Manual CTL_CODE macro definition
 #ifndef CTL_CODE
@@ -185,9 +123,9 @@ typedef LONG                NTSTATUS;
 #define IOCTL_WRITE_PROCESS_MEMORY     CTL_CODE(FILE_DEVICE_CUSTOM_DRIVER, 0x801, METHOD_BUFFERED, FILE_WRITE_ACCESS)
 #define IOCTL_GET_PROCESS_INFO         CTL_CODE(FILE_DEVICE_CUSTOM_DRIVER, 0x802, METHOD_BUFFERED, FILE_READ_ACCESS)
 
-// -----------------------------------------------------------------------------
+// ============================================================================
 // Memory Operation Structures
-// -----------------------------------------------------------------------------
+// ============================================================================
 
 #pragma pack(push, 1)
 
@@ -211,17 +149,17 @@ typedef struct _PROCESS_INFO_REQUEST {
 
 #pragma pack(pop)
 
-// -----------------------------------------------------------------------------
+// ============================================================================
 // Symbolic Link and Device Names
-// -----------------------------------------------------------------------------
+// ============================================================================
 
 #define DRIVER_DEVICE_NAME            L"\\Device\\CustomMemoryDriver"
 #define DRIVER_SYMBOLIC_LINK_NAME     L"\\DosDevices\\CustomMemoryDriver"
 #define DRIVER_USER_LINK_NAME         L"\\\\.\\CustomMemoryDriver"
 
-// -----------------------------------------------------------------------------
+// ============================================================================
 // DLL Export Definitions
-// -----------------------------------------------------------------------------
+// ============================================================================
 
 #ifdef _KERNEL_MODE
     // Kernel-mode: no DLL exports
@@ -233,12 +171,20 @@ typedef struct _PROCESS_INFO_REQUEST {
     #endif
 #endif
 
-// -----------------------------------------------------------------------------
+// ============================================================================
 // Alignment Macros
-// -----------------------------------------------------------------------------
+// ============================================================================
 
 #define ALIGN_DOWN_POINTER(p, align) ((PVOID)((ULONG_PTR)(p) & ~((ULONG_PTR)(align) - 1)))
 #define ALIGN_UP_POINTER(p, align)   ((PVOID)(((ULONG_PTR)(p) + (ULONG_PTR)(align) - 1) & ~((ULONG_PTR)(align) - 1)))
+
+// ============================================================================
+// Helper Macro
+// ============================================================================
+
+#ifndef UNREFERENCED_PARAMETER
+#define UNREFERENCED_PARAMETER(P)     (void)(P)
+#endif
 
 #ifdef __cplusplus
 }

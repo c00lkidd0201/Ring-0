@@ -2,6 +2,7 @@
 
 // ============================================================================
 // KERNEL DEFINITIONS - Only for kernel mode
+// Complete NO-WDK type definitions for Windows kernel
 // ============================================================================
 
 #ifndef _KERNEL_DEFS_H_
@@ -12,9 +13,10 @@ extern "C" {
 #endif
 
 // ============================================================================
-// Basic Types for Kernel Mode
+// Fundamental Types - Must be defined first
 // ============================================================================
 
+// Basic integer types
 typedef signed char         INT8;
 typedef unsigned char       UINT8;
 typedef signed short        INT16;
@@ -24,6 +26,13 @@ typedef unsigned int        UINT32;
 typedef signed long long    INT64;
 typedef unsigned long long  UINT64;
 
+// Character types
+typedef char                CHAR;
+typedef wchar_t             WCHAR;
+typedef unsigned char       UCHAR;
+typedef signed char         CCHAR;
+
+// Windows-compatible types
 typedef UINT8               BYTE;
 typedef UINT16              WORD;
 typedef UINT32              DWORD;
@@ -32,20 +41,32 @@ typedef UINT32              ULONG;
 typedef INT64               LONG64;
 typedef UINT64              ULONG64;
 
+// Pointer types
 typedef void*               PVOID;
 typedef const void*         PCVOID;
-typedef char*               PCHAR;
-typedef const char*         PCCHAR;
-typedef wchar_t*            PWCHAR;
-typedef const wchar_t*     PCWCHAR;
+typedef CHAR*               PCHAR;
+typedef const CHAR*         PCCHAR;
+typedef WCHAR*              PWCHAR;
+typedef const WCHAR*       PCWCHAR;
+typedef UCHAR*              PUCHAR;
+typedef const UCHAR*       PCUCHAR;
 
+// Handle types
 typedef PVOID               HANDLE;
 
+// String pointer types
+typedef const WCHAR*       PCWSTR;
+typedef WCHAR*              PWSTR;
+typedef const CHAR*        PCSTR;
+typedef CHAR*               PSTR;
+
+// Boolean
 typedef UINT8               BOOLEAN;
 #define TRUE                    1
 #define FALSE                   0
 #define NULL                    ((PVOID)0)
 
+// Size types
 #ifdef _WIN64
     typedef UINT64              SIZE_T;
     typedef INT64               SSIZE_T;
@@ -58,8 +79,13 @@ typedef UINT8               BOOLEAN;
     typedef INT32               LONG_PTR;
 #endif
 
+// Pointer to SIZE_T
+typedef SIZE_T*              PSIZE_T;
+
+// NTSTATUS
 typedef LONG                NTSTATUS;
 
+// Calling conventions
 #define NTAPI                   __stdcall
 #define NTINLINE                __inline
 
@@ -112,6 +138,13 @@ typedef struct _EPROCESS EPROCESS, *PEPROCESS;
 typedef struct _KPROCESS KPROCESS, *PKPROCESS;
 
 // ============================================================================
+// Function Pointer Types
+// ============================================================================
+
+typedef VOID (NTAPI *PDRIVER_UNLOAD)(PDRIVER_OBJECT DriverObject);
+typedef NTSTATUS (NTAPI *PDRIVER_DISPATCH)(PDEVICE_OBJECT DeviceObject, PIRP Irp);
+
+// ============================================================================
 // DEVICE_OBJECT Structure
 // ============================================================================
 
@@ -132,7 +165,7 @@ typedef struct _DEVICE_OBJECT {
     union {
         PDEVICE_OBJECT Next;
         PVOID Vpb;
-    };
+    } u1;
     PVOID DeviceObjectExtension;
     PVOID Reserved;
 } DEVICE_OBJECT, *PDEVICE_OBJECT;
@@ -140,9 +173,6 @@ typedef struct _DEVICE_OBJECT {
 // ============================================================================
 // DRIVER_OBJECT Structure
 // ============================================================================
-
-typedef VOID (NTAPI *PDRIVER_UNLOAD)(PDRIVER_OBJECT DriverObject);
-typedef NTSTATUS (NTAPI *PDRIVER_DISPATCH)(PDEVICE_OBJECT DeviceObject, PIRP Irp);
 
 typedef struct _DRIVER_OBJECT {
     CSHORT Type;
@@ -169,16 +199,16 @@ typedef struct _IRP {
     union {
         PIRP AssociatedIrp;
         PVOID Thread;
-    };
+    } u1;
     PIO_STACK_LOCATION StackLocation;
     PVOID UserBuffer;
     union {
         struct {
             PVOID UserApcRoutine;
             PVOID UserApcContext;
-        };
+        } s1;
         PVOID UserEvent;
-    };
+    } u2;
     PVOID UserIosb;
     PVOID UserIosbValue;
     ULONG Overlay;
@@ -205,28 +235,28 @@ typedef struct _IO_STACK_LOCATION {
             PVOID FileObject;
             PVOID CompletionRoutine;
             PVOID Context;
-        };
+        } s1;
         struct {
             PVOID DeviceObject;
             ULONG_PTR Parameters;
-        };
-    };
+        } s2;
+    } u1;
     PVOID DeviceObject;
     PVOID FileObject;
     union {
         struct {
             PVOID Read;
             PVOID Write;
-        };
+        } s1;
         struct {
             ULONG_PTR Length;
             ULONG_PTR Key;
             LARGE_INTEGER ByteOffset;
-        };
+        } s2;
         struct {
             ULONG_PTR Length;
             PVOID Buffer;
-        };
+        } s3;
     } Parameters;
 } IO_STACK_LOCATION, *PIO_STACK_LOCATION;
 

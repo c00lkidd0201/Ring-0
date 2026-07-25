@@ -17,11 +17,11 @@ PDEVICE_OBJECT g_DeviceObject = NULL;
 // FORWARD DECLARATIONS
 // ============================================================================
 
-NTSTATUS DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING RegistryPath);
-VOID DriverUnload(PDRIVER_OBJECT DriverObject);
-NTSTATUS DispatchCreate(PDEVICE_OBJECT DeviceObject, PIRP Irp);
-NTSTATUS DispatchClose(PDEVICE_OBJECT DeviceObject, PIRP Irp);
-NTSTATUS DispatchDeviceControl(PDEVICE_OBJECT DeviceObject, PIRP Irp);
+NTSTATUS NTAPI DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING RegistryPath);
+VOID NTAPI DriverUnload(PDRIVER_OBJECT DriverObject);
+NTSTATUS NTAPI DispatchCreate(PDEVICE_OBJECT DeviceObject, PIRP Irp);
+NTSTATUS NTAPI DispatchClose(PDEVICE_OBJECT DeviceObject, PIRP Irp);
+NTSTATUS NTAPI DispatchDeviceControl(PDEVICE_OBJECT DeviceObject, PIRP Irp);
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -138,7 +138,7 @@ NTSTATUS WriteProcessMemory(
 // IRP DISPATCH HANDLERS
 // ============================================================================
 
-NTSTATUS DispatchCreate(PDEVICE_OBJECT DeviceObject, PIRP Irp)
+NTSTATUS NTAPI DispatchCreate(PDEVICE_OBJECT DeviceObject, PIRP Irp)
 {
     UNREFERENCED_PARAMETER(DeviceObject);
     
@@ -155,7 +155,7 @@ NTSTATUS DispatchCreate(PDEVICE_OBJECT DeviceObject, PIRP Irp)
     return STATUS_SUCCESS;
 }
 
-NTSTATUS DispatchClose(PDEVICE_OBJECT DeviceObject, PIRP Irp)
+NTSTATUS NTAPI DispatchClose(PDEVICE_OBJECT DeviceObject, PIRP Irp)
 {
     UNREFERENCED_PARAMETER(DeviceObject);
     
@@ -172,7 +172,7 @@ NTSTATUS DispatchClose(PDEVICE_OBJECT DeviceObject, PIRP Irp)
     return STATUS_SUCCESS;
 }
 
-NTSTATUS DispatchDeviceControl(PDEVICE_OBJECT DeviceObject, PIRP Irp)
+NTSTATUS NTAPI DispatchDeviceControl(PDEVICE_OBJECT DeviceObject, PIRP Irp)
 {
     UNREFERENCED_PARAMETER(DeviceObject);
     
@@ -301,7 +301,7 @@ NTSTATUS DispatchDeviceControl(PDEVICE_OBJECT DeviceObject, PIRP Irp)
 // DRIVER ENTRY POINT
 // ============================================================================
 
-NTSTATUS DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING RegistryPath)
+NTSTATUS NTAPI DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING RegistryPath)
 {
     UNREFERENCED_PARAMETER(RegistryPath);
     
@@ -359,7 +359,7 @@ NTSTATUS DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING RegistryPath)
 // DRIVER UNLOAD ROUTINE
 // ============================================================================
 
-VOID DriverUnload(PDRIVER_OBJECT DriverObject)
+VOID NTAPI DriverUnload(PDRIVER_OBJECT DriverObject)
 {
     UNREFERENCED_PARAMETER(DriverObject);
     
