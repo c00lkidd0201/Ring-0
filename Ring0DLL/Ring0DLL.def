@@ -1,0 +1,6 @@
+LIBRARY Ring0DLL
+EXPORTS
+    ReadMemory
+    WriteMemory
+    InitializeDriverConnection
+    CloseDriverConnection
