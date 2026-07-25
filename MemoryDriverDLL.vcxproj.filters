@@ -2,13 +2,13 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="dllmain.cpp" />
-    <ClInclude Include="Driver.h" />
+    <ClInclude Include="SharedDefs.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClInclude Include="Driver.h">
+    <ClInclude Include="SharedDefs.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

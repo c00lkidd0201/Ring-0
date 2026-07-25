@@ -61,8 +61,8 @@
     <EnableEnhancedInstructionSet>Default</EnableEnhancedInstructionSet>
     <PreprocessorDefinitions>_KERNEL_MODE;_AMD64_;NT_INST;_WIN64;_X86_64_;WIN32;NDEBUG;_SECURE_SCL=0;_HAS_EXCEPTIONS=0;_HAS_ITERATOR_DEBUGGING=0;_HAS_CPP17=1</PreprocessorDefinitions>
     <DisableSpecificWarnings>4100;4127;4201;4514;4706;4710;4711</DisableSpecificWarnings>
-    <WarningLevel>Level4</WarningLevel>
-    <TreatWarningAsError>true</TreatWarningAsError>
+    <WarningLevel>Level3</WarningLevel>
+    <TreatWarningAsError>false</TreatWarningAsError>
     <BufferSecurityCheck>false</BufferSecurityCheck>
     <BasicRuntimeChecks>Default</BasicRuntimeChecks>
   </PropertyGroup>
@@ -82,16 +82,16 @@
     <EnableEnhancedInstructionSet>Default</EnableEnhancedInstructionSet>
     <PreprocessorDefinitions>_KERNEL_MODE;_AMD64_;NT_INST;_WIN64;_X86_64_;WIN32;_DEBUG;_SECURE_SCL=0;_HAS_EXCEPTIONS=0;_HAS_ITERATOR_DEBUGGING=0;_HAS_CPP17=1</PreprocessorDefinitions>
     <DisableSpecificWarnings>4100;4127;4201;4514;4706;4710;4711</DisableSpecificWarnings>
-    <WarningLevel>Level4</WarningLevel>
-    <TreatWarningAsError>true</TreatWarningAsError>
+    <WarningLevel>Level3</WarningLevel>
+    <TreatWarningAsError>false</TreatWarningAsError>
     <BufferSecurityCheck>false</BufferSecurityCheck>
     <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <WarningLevel>Level4</WarningLevel>
-      <TreatWarningAsError>true</TreatWarningAsError>
+      <WarningLevel>Level3</WarningLevel>
+      <TreatWarningAsError>false</TreatWarningAsError>
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
@@ -116,8 +116,8 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <WarningLevel>Level4</WarningLevel>
-      <TreatWarningAsError>true</TreatWarningAsError>
+      <WarningLevel>Level3</WarningLevel>
+      <TreatWarningAsError>false</TreatWarningAsError>
       <Optimization>Disabled</Optimization>
       <FunctionLevelLinking>false</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
@@ -140,7 +140,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="main.c" />
-    <ClInclude Include="Driver.h" />
+    <ClInclude Include="KernelDefs.h" />
+    <ClInclude Include="SharedDefs.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

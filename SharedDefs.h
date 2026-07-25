@@ -1,17 +1,29 @@
 #pragma once
 
 // ============================================================================
-// NO-WDK DRIVER HEADER - Universal header for kernel and user mode
+// SHARED DEFINITIONS - Common for both kernel and user mode
 // ============================================================================
+
+// -----------------------------------------------------------------------------
+// Basic Types - Define only if not already defined
+// -----------------------------------------------------------------------------
+
+#ifndef _SHARED_DEFS_H_
+#define _SHARED_DEFS_H_
+
+// Prevent multiple inclusions
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 // -----------------------------------------------------------------------------
 // Platform Detection
 // -----------------------------------------------------------------------------
 
 #ifdef _KERNEL_MODE
-    // Kernel mode - no Windows headers
+    // Kernel mode
 #else
-    // User mode - include Windows headers
+    // User mode
     #ifndef WIN32_LEAN_AND_MEAN
         #define WIN32_LEAN_AND_MEAN
     #endif
@@ -20,10 +32,12 @@
 #endif
 
 // -----------------------------------------------------------------------------
-// Basic Types - Must be defined for kernel mode
+// Common Types
 // -----------------------------------------------------------------------------
 
-#ifdef _KERNEL_MODE
+// If not in kernel mode and not defined, define basic types
+#ifndef _WINDOWS_
+#ifndef _INC_WINDOWS
 
 // Basic integer types
 typedef signed char         INT8;
@@ -41,109 +55,89 @@ typedef UINT16              WORD;
 typedef UINT32              DWORD;
 typedef INT32               LONG;
 typedef UINT32              ULONG;
-typedef INT64               LONG64;
-typedef UINT64              ULONG64;
 
 // Pointer types
 typedef void*               PVOID;
 typedef const void*         PCVOID;
-typedef char*               PCHAR;
-typedef const char*         PCCHAR;
-typedef wchar_t*            PWCHAR;
-typedef const wchar_t*     PCWCHAR;
 
 // Handle types
 typedef PVOID               HANDLE;
 
 // Boolean
 typedef UINT8               BOOLEAN;
+#ifndef TRUE
 #define TRUE                    1
+#endif
+#ifndef FALSE
 #define FALSE                   0
+#endif
+#ifndef NULL
 #define NULL                    ((PVOID)0)
+#endif
 
 // Size types
-typedef UINT64              SIZE_T;
-typedef UINT64              ULONG_PTR;
-typedef INT64               LONG_PTR;
-typedef INT64               SSIZE_T;
+#ifdef _WIN64
+    typedef UINT64              SIZE_T;
+    typedef INT64               SSIZE_T;
+    typedef UINT64              ULONG_PTR;
+    typedef INT64               LONG_PTR;
+#else
+    typedef UINT32              SIZE_T;
+    typedef INT32               SSIZE_T;
+    typedef UINT32              ULONG_PTR;
+    typedef INT32               LONG_PTR;
+#endif
 
 // NTSTATUS
-typedef LONG                NTSTATUS;
-
-// Calling conventions
-#define NTAPI                   __stdcall
-#define NTINLINE                __inline
-
-// Memory pool types
-#define NonPagedPoolNx          0x00000020UL
-
-#else
-
-// User mode - ensure we have all types
-typedef unsigned long long  ULONG_PTR;
-typedef long long           LONG_PTR;
-typedef long                NTSTATUS;
-
-#endif // _KERNEL_MODE
-
-// -----------------------------------------------------------------------------
-// NT Status Codes (common for both modes)
-// -----------------------------------------------------------------------------
-
 #ifndef _NTSTATUS_DEFINED_
 #define _NTSTATUS_DEFINED_
+typedef LONG                NTSTATUS;
+#endif
 
-define STATUS_SUCCESS               ((NTSTATUS)0x00000000L)
+#endif // !_WINDOWS_ && !_INC_WINDOWS
+#endif // !_KERNEL_MODE
+
+// -----------------------------------------------------------------------------
+// NT Status Codes
+// -----------------------------------------------------------------------------
+
+#ifndef STATUS_SUCCESS
+#define STATUS_SUCCESS               ((NTSTATUS)0x00000000L)
+#endif
+#ifndef STATUS_UNSUCCESSFUL
 #define STATUS_UNSUCCESSFUL          ((NTSTATUS)0xC0000001L)
+#endif
+#ifndef STATUS_INVALID_PARAMETER
 #define STATUS_INVALID_PARAMETER     ((NTSTATUS)0xC000000DL)
+#endif
+#ifndef STATUS_INFO_LENGTH_MISMATCH
 #define STATUS_INFO_LENGTH_MISMATCH  ((NTSTATUS)0xC0000004L)
+#endif
+#ifndef STATUS_ACCESS_DENIED
 #define STATUS_ACCESS_DENIED         ((NTSTATUS)0xC0000022L)
+#endif
+#ifndef STATUS_BUFFER_TOO_SMALL
 #define STATUS_BUFFER_TOO_SMALL      ((NTSTATUS)0xC0000023L)
+#endif
+#ifndef STATUS_DEVICE_NOT_FOUND
 #define STATUS_DEVICE_NOT_FOUND      ((NTSTATUS)0xC000000EL)
+#endif
+#ifndef STATUS_NO_MEMORY
 #define STATUS_NO_MEMORY             ((NTSTATUS)0xC0000017L)
+#endif
+#ifndef STATUS_PENDING
 #define STATUS_PENDING               ((NTSTATUS)0x00000103L)
+#endif
+#ifndef STATUS_NOT_IMPLEMENTED
 #define STATUS_NOT_IMPLEMENTED       ((NTSTATUS)0xC0000001L)
 #endif
 
 // -----------------------------------------------------------------------------
-// String Structures (for kernel mode)
+// Error Handling Macros
 // -----------------------------------------------------------------------------
 
-#ifdef _KERNEL_MODE
-
-// UNICODE_STRING structure
-typedef struct _UNICODE_STRING {
-    USHORT Length;
-    USHORT MaximumLength;
-    PWCHAR Buffer;
-} UNICODE_STRING, *PUNICODE_STRING;
-
-// ANSI_STRING structure
-typedef struct _ANSI_STRING {
-    USHORT Length;
-    USHORT MaximumLength;
-    PCHAR Buffer;
-} ANSI_STRING, *PANSI_STRING;
-
-// LARGE_INTEGER structure
-typedef union _LARGE_INTEGER {
-    struct {
-        ULONG LowPart;
-        LONG HighPart;
-    };
-    struct {
-        ULONG LowPart;
-        LONG HighPart;
-    } u;
-    LONG64 QuadPart;
-} LARGE_INTEGER, *PLARGE_INTEGER;
-
-#else
-
-// User mode - these are already defined in windows.h
-// But we need to ensure compatibility
-
-#endif // _KERNEL_MODE
+#define NT_SUCCESS(Status)           (((NTSTATUS)(Status)) >= 0)
+#define NT_FAILURE(Status)           (((NTSTATUS)(Status)) < 0)
 
 // -----------------------------------------------------------------------------
 // IOCTL Definitions
@@ -158,7 +152,7 @@ typedef union _LARGE_INTEGER {
 // Device Type - Custom unique value (0x8000-0xFFFF range)
 #define FILE_DEVICE_CUSTOM_DRIVER      0x8000
 
-// Access Rights (avoid redefinition in user mode)
+// Access Rights
 #ifndef FILE_ANY_ACCESS
 #define FILE_ANY_ACCESS                0x0000
 #endif
@@ -195,8 +189,9 @@ typedef union _LARGE_INTEGER {
 // Memory Operation Structures
 // -----------------------------------------------------------------------------
 
-// Structure for read/write process memory requests
 #pragma pack(push, 1)
+
+// Structure for read/write process memory requests
 typedef struct _MEMORY_OPERATION_REQUEST {
     ULONG_PTR ProcessId;           // Target process ID
     ULONG_PTR TargetAddress;       // Address to read from/write to
@@ -213,6 +208,7 @@ typedef struct _PROCESS_INFO_REQUEST {
     SIZE_T    ProcessSize;        // Size of process image (output)
     NTSTATUS  Status;             // Operation status (output)
 } PROCESS_INFO_REQUEST, *PPROCESS_INFO_REQUEST;
+
 #pragma pack(pop)
 
 // -----------------------------------------------------------------------------
@@ -238,26 +234,14 @@ typedef struct _PROCESS_INFO_REQUEST {
 #endif
 
 // -----------------------------------------------------------------------------
-// Error Handling Macros
-// -----------------------------------------------------------------------------
-
-#define NT_SUCCESS(Status)           (((NTSTATUS)(Status)) >= 0)
-#define NT_FAILURE(Status)           (((NTSTATUS)(Status)) < 0)
-
-// -----------------------------------------------------------------------------
 // Alignment Macros
 // -----------------------------------------------------------------------------
 
 #define ALIGN_DOWN_POINTER(p, align) ((PVOID)((ULONG_PTR)(p) & ~((ULONG_PTR)(align) - 1)))
 #define ALIGN_UP_POINTER(p, align)   ((PVOID)(((ULONG_PTR)(p) + (ULONG_PTR)(align) - 1) & ~((ULONG_PTR)(align) - 1)))
 
-// -----------------------------------------------------------------------------
-// Prevent macro redefinition warnings in user mode
-// -----------------------------------------------------------------------------
-
-#ifdef _KERNEL_MODE
-// Kernel mode definitions go here
-#else
-// User mode - prevent redefinition of Windows types
-#undef MEMORYDRIVER_EXPORTS
+#ifdef __cplusplus
+}
 #endif
+
+#endif // _SHARED_DEFS_H_
