@@ -28,6 +28,8 @@ if not exist "%~dp0x64\Release\%DRIVER_FILE%" (
 :: ============================================
 :: Menu
 :: ============================================
+:MENU
+cls
 echo.
 echo ============================================
 echo NO-WDK Driver Manager (Test Mode)

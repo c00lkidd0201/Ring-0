@@ -1,5 +1,5 @@
 // dllmain.cpp
-#pragma pack(push, 8) // Выравнивание 8 байт для user-mode
+#pragma pack(push, 8)
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -8,11 +8,26 @@
 
 // --- Глобальная переменная для хендла устройства ---
 HANDLE g_DeviceHandle = INVALID_HANDLE_VALUE;
+HANDLE g_HeapHandle = NULL;
+
+// --- Инициализация кучи ---
+BOOL InitializeHeap() {
+    g_HeapHandle = HeapCreate(0, 0, 0);
+    return (g_HeapHandle != NULL);
+}
+
+// --- Освобождение кучи ---
+VOID FreeHeap() {
+    if (g_HeapHandle) {
+        HeapDestroy(g_HeapHandle);
+        g_HeapHandle = NULL;
+    }
+}
 
 // --- Инициализация соединения с драйвером ---
 BOOL InitializeDriverConnection() {
     g_DeviceHandle = CreateFileW(
-        L"\\\.\\MemoryDriver",
+        L"\\.\\MemoryDriver",
         GENERIC_READ | GENERIC_WRITE,
         FILE_SHARE_READ | FILE_SHARE_WRITE,
         NULL,
@@ -20,7 +35,6 @@ BOOL InitializeDriverConnection() {
         FILE_ATTRIBUTE_NORMAL,
         NULL
     );
-
     return (g_DeviceHandle != INVALID_HANDLE_VALUE);
 }
 
@@ -43,9 +57,8 @@ BOOL ReadMemory(
         return FALSE;
     }
 
-    // Выделение буфера для запроса
     SIZE_T RequestSize = sizeof(MEMORY_READ_REQUEST) + Size - 1;
-    PMEMORY_READ_REQUEST Request = (PMEMORY_READ_REQUEST)malloc(RequestSize);
+    PMEMORY_READ_REQUEST Request = (PMEMORY_READ_REQUEST)HeapAlloc(g_HeapHandle, 0, RequestSize);
     if (!Request) {
         return FALSE;
     }
@@ -66,7 +79,7 @@ BOOL ReadMemory(
         NULL
     );
 
-    free(Request);
+    HeapFree(g_HeapHandle, 0, Request);
     return Result;
 }
 
@@ -81,9 +94,8 @@ BOOL WriteMemory(
         return FALSE;
     }
 
-    // Выделение буфера для запроса
     SIZE_T RequestSize = sizeof(MEMORY_WRITE_REQUEST) + Size - 1;
-    PMEMORY_WRITE_REQUEST Request = (PMEMORY_WRITE_REQUEST)malloc(RequestSize);
+    PMEMORY_WRITE_REQUEST Request = (PMEMORY_WRITE_REQUEST)HeapAlloc(g_HeapHandle, 0, RequestSize);
     if (!Request) {
         return FALSE;
     }
@@ -105,26 +117,28 @@ BOOL WriteMemory(
         NULL
     );
 
-    free(Request);
+    HeapFree(g_HeapHandle, 0, Request);
     return Result;
 }
 
 // --- Точка входа DLL ---
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved) {
-    (void)hModule; // Убираем варнинг о неиспользуемой переменной
-    (void)lpReserved; // Убираем варнинг о неиспользуемой переменной
+    (void)hModule;
+    (void)lpReserved;
 
     switch (ul_reason_for_call) {
         case DLL_PROCESS_ATTACH:
-            if (!InitializeDriverConnection()) {
+            if (!InitializeHeap() || !InitializeDriverConnection()) {
+                FreeHeap();
                 return FALSE;
             }
             break;
         case DLL_PROCESS_DETACH:
             CloseDriverConnection();
+            FreeHeap();
             break;
     }
     return TRUE;
 }
 
-#pragma pack(pop) // Восстановление выравнивания
+#pragma pack(pop)

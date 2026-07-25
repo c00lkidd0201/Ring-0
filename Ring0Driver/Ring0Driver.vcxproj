@@ -51,7 +51,6 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_KERNEL_MODE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BufferSecurityCheck>false</BufferSecurityCheck>
-      <StructMemberAlignment>1</StructMemberAlignment>
     </ClCompile>
     <Link>
       <SubSystem>Native</SubSystem>
@@ -69,7 +68,6 @@
       <Optimization>MaxSpeed</Optimization>
       <PreprocessorDefinitions>_KERNEL_MODE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BufferSecurityCheck>false</BufferSecurityCheck>
-      <StructMemberAlignment>1</StructMemberAlignment>
     </ClCompile>
     <Link>
       <SubSystem>Native</SubSystem>
