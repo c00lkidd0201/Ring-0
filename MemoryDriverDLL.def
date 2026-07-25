@@ -1,0 +1,8 @@
+LIBRARY MemoryDriverDLL
+EXPORTS
+    ReadProcessMemoryEx
+    WriteProcessMemoryEx
+    GetProcessInfoEx
+    IsDriverLoaded
+    GetNtStatusString
+    TestDriverCommunication
